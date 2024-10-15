@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
-const crypto = require("crypto");
+// const crypto = require("crypto");
 const { sendVerificationEmail } = require("../../utils/mailer");
 
 const signupUser = async (req, res) => {
@@ -76,25 +76,25 @@ const signInUser = async (req, res) => {
 
 let verificationCodes = {};
 
-const requestPasswordReset = async (req, res) => {
-  const { email } = req.body;
+// const requestPasswordReset = async (req, res) => {
+//   const { email } = req.body;
 
-  try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+//   try {
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-    const verificationCode = crypto.randomBytes(3).toString("hex");
-    verificationCodes[email] = verificationCode;
+//     const verificationCode = crypto.randomBytes(3).toString("hex");
+//     verificationCodes[email] = verificationCode;
 
-    await sendVerificationEmail(email, verificationCode);
-    res.status(200).json({ message: "Verification code sent to your email" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+//     await sendVerificationEmail(email, verificationCode);
+//     res.status(200).json({ message: "Verification code sent to your email" });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
 
 const resetPassword = async (req, res) => {
   const { email, code, newPassword } = req.body;
@@ -125,6 +125,6 @@ const resetPassword = async (req, res) => {
 module.exports = {
   signupUser,
   signInUser,
-  requestPasswordReset,
+  // requestPasswordReset,
   resetPassword,
 };
