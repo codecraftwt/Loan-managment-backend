@@ -3,15 +3,32 @@ const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
 // const crypto = require("crypto");
 const { sendVerificationEmail } = require("../../utils/mailer");
+const { validateEmail, validateMobile } = require("../../utils/authHelpers");
 
 const signupUser = async (req, res) => {
-  const { email, userName, password, address, aadharCardNo } = req.body;
+  const { email, userName, password, address, aadharCardNo, mobileNo } =
+    req.body;
 
   try {
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ massage: "User allReady exists" });
+      return res.status(400).json({ message: "User already exists" });
     }
+
+    const mobileExists = await User.findOne({ mobileNo });
+    if (mobileExists) {
+      return res
+        .status(400)
+        .json({ message: "Mobile number is already in use" });
+    }
+
+    const aadharExists = await User.findOne({ aadharCardNo });
+    if (aadharExists) {
+      return res
+        .status(400)
+        .json({ message: "Aadhar card number is already registered" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
@@ -19,6 +36,7 @@ const signupUser = async (req, res) => {
       password: hashedPassword,
       address,
       aadharCardNo,
+      mobileNo,
       userName,
     });
 
@@ -32,45 +50,78 @@ const signupUser = async (req, res) => {
         userName: newUser.userName,
         address: newUser.address,
         aadharCardNo: newUser.aadharCardNo,
+        mobileNo: newUser.mobileNo,
       },
     });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({
-      massage: "Server Error",
-      massage: `error: ${error}`,
+      message: "Server error",
+      error: error.message,
     });
   }
 };
 
 const signInUser = async (req, res) => {
-  const { email, password } = req.body;
-  console.log("email", email);
+  const { emailOrMobile, password } = req.body;
+
   try {
-    const user = await User.findOne({ email });
+
+    if (!emailOrMobile || !password) {
+      return res.status(400).json({
+        message: "Please provide email or mobile number, and password.",
+      });
+    }
+
+    let user;
+    if (validateEmail(emailOrMobile)) {
+      // If it's an email, search by email
+      user = await User.findOne({ email: emailOrMobile });
+    } else if (validateMobile(emailOrMobile)) {
+      // If it's a mobile number, search by mobile number
+      user = await User.findOne({ mobileNo: emailOrMobile });
+    } else {
+      return res.status(400).json({
+        message: "Invalid input. Please provide a valid email or mobile number.",
+      });
+    }
+
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({
+        message: "Invalid credentials, please check your email or mobile number and password.",
+      });
     }
 
-    const isMatch = await user.matchPassword(password);
+    // Compare provided password with hashed password in the database
+    const isMatch = await bcrypt.compare(password.trim(), user.password);
+
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({
+        message: "Invalid password, please check your email or mobile number and password.",
+      });
     }
 
+    // Generate JWT token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "30d",
     });
 
-    res.status(200).json({
+    // Send response with user details and JWT token
+    return res.status(200).json({
       _id: user._id,
       email: user.email,
       userName: user.userName,
       address: user.address,
       aadharCardNo: user.aadharCardNo,
+      mobileNo: user.mobileNo,
       token,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error in signInUser:", error);
+    return res.status(500).json({
+      message: "Server error. Please try again later.",
+      error: error.message,
+    });
   }
 };
 

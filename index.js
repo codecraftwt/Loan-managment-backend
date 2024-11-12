@@ -5,6 +5,8 @@ const cors = require("cors");
 const app = express();
 const AuthRoutes = require("./src/routes/Auth/auth");
 const LoanRoutes = require("./src/routes/Auth/Loan");
+const UserRoutes = require("./src/routes/userRoutes")
+const SubscriptionRoutes = require("./src/routes/subscriptionRoutes")
 
 dotenv.config();
 connectDB();
@@ -15,6 +17,8 @@ app.use(express.json());
 
 app.use("/api/auth", AuthRoutes);
 app.use("/api/loan", LoanRoutes);
+app.use("/api/user", UserRoutes);
+app.use("/api/subscription", SubscriptionRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running...");

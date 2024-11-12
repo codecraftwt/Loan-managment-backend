@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
     userName: {
       type: String,
       required: true,
+      unique: true,
     },
     password: {
       type: String,
@@ -23,24 +24,20 @@ const userSchema = new mongoose.Schema(
     aadharCardNo: {
       type: String,
       required: true,
+      match: [/^\d{12}$/, "Please provide a valid 12-digit Aadhar number"],
     },
+    mobileNo: {
+      type: String,
+      required: true,
+      match: [/^\d{10}$/, "Please provide a valid 10-digit mobile number"],
+    },
+    subscription: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subscription'
+    }
   },
   { timestamps: true }
 );
-
-// Middleware to hash the password before saving
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-// Method to check password match
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;
