@@ -5,25 +5,35 @@ const User = require("../../models/User");
 const createSubscription = async (req, res) => {
     const { userId, subscriptionPlan } = req.body;
 
+    if (!['trial', 'monthly', 'yearly'].includes(subscriptionPlan)) {
+        return res.status(400).json({ message: 'Invalid subscription plan' });
+    }
+
     try {
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Check if the user already has an active subscription
+        const existingSubscription = await Subscription.findOne({ user: userId, isActive: true });
+        if (existingSubscription) {
+            return res.status(400).json({ message: 'User already has an active subscription' });
+        }
+
         const subscriptionStart = new Date();
         let subscriptionExpiry;
 
+        // Set subscription expiry based on plan
         if (subscriptionPlan === "trial") {
             subscriptionExpiry = new Date(subscriptionStart);
             subscriptionExpiry.setDate(subscriptionExpiry.getDate() + 7); // Trial period for 7 days
-        } else {
+        } else if (subscriptionPlan === "monthly") {
             subscriptionExpiry = new Date();
-            if (subscriptionPlan === "monthly") {
-                subscriptionExpiry.setMonth(subscriptionExpiry.getMonth() + 1);
-            } else if (subscriptionPlan === "yearly") {
-                subscriptionExpiry.setFullYear(subscriptionExpiry.getFullYear() + 1);
-            }
+            subscriptionExpiry.setMonth(subscriptionExpiry.getMonth() + 1);
+        } else if (subscriptionPlan === "yearly") {
+            subscriptionExpiry = new Date();
+            subscriptionExpiry.setFullYear(subscriptionExpiry.getFullYear() + 1);
         }
 
         const subscription = new Subscription({
@@ -31,10 +41,12 @@ const createSubscription = async (req, res) => {
             subscriptionPlan,
             subscriptionStart,
             subscriptionExpiry,
+            isActive: true,  // Mark as active by default
         });
 
         await subscription.save();
 
+        // Update user's subscription field
         user.subscription = subscription._id;
         await user.save();
 
@@ -51,6 +63,7 @@ const createSubscription = async (req, res) => {
     }
 };
 
+
 // Get User Subscription API
 const getUserSubscription = async (req, res) => {
     const { userId } = req.params;
@@ -63,8 +76,14 @@ const getUserSubscription = async (req, res) => {
 
         const subscription = user.subscription;
         const currentDate = new Date();
-        if (subscription.subscriptionPlan === "trial" && currentDate > subscription.subscriptionExpiry) {
-            subscription.isActive = false;
+
+        if (currentDate > subscription.subscriptionExpiry) {
+            if (subscription.subscriptionPlan === 'trial') {
+                subscription.isActive = false; // Mark as expired
+            }
+            if (subscription.subscriptionPlan === 'monthly' || subscription.subscriptionPlan === 'yearly') {
+                subscription.isActive = false;
+            }
             await subscription.save();
         }
 

@@ -24,6 +24,10 @@ const subscriptionSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        expiryEmailSent: {
+            type: Boolean,
+            default: false,  // Track if the expiry email has been sent
+        },
     },
     { timestamps: true }
 );

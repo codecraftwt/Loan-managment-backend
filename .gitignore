@@ -1,9 +1,23 @@
+# Node.js modules
 node_modules/
+
+# npm and yarn log files
 npm-debug.log*
 yarn-error.log
+
+# Environment variables
 .env
 
 
-logs
+# Logs
+logs/
 *.log
 logs/*.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+
+# Optional: Exclude build files or dist folder if using build tools
+/dist
+/build
