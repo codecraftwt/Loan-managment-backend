@@ -44,12 +44,12 @@ const loanSchema = new mongoose.Schema(
     },
     agreement: {
       type: String,
-      required: [true, 'Agreement URL is required'],
+      // required: [true, 'Agreement URL is required'],
       // match: [/^https?:\/\/.+/, 'Agreement must be a valid URL'],
     },
     digitalSignature: {
       type: String,
-      required: [true, 'Digital signature URL is required'],
+      // required: [true, 'Digital signature URL is required'],
       // match: [/^https?:\/\/.+/, 'Digital signature must be a valid URL'],
     },
     lenderId: {

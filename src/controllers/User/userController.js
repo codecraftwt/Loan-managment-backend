@@ -3,8 +3,9 @@ const User = require('../../models/User');
 
 // Update Profile API
 const updateProfile = async (req, res) => {
-    const { userName, email, mobileNo, address } = req.body;
+    const { userName, email, mobileNo, address } = req.body.userData;
     const userId = req.user.id; // Get user ID from the decoded token
+
 
     try {
         // Find the user by ID
@@ -23,10 +24,12 @@ const updateProfile = async (req, res) => {
         return res.status(200).json({
             message: "Profile updated successfully.",
             user: {
+                _id: user._id,
                 userName: user.userName,
                 email: user.email,
                 mobileNo: user.mobileNo,
                 address: user.address,
+                aadharCardNo: user.aadharCardNo,
             },
         });
     } catch (error) {

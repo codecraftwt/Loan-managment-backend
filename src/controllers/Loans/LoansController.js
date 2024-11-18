@@ -8,17 +8,17 @@ const AddLoan = async (req, res) => {
     const LoanData = req.body;
 
     // Check if the user has an active subscription
-    const activeSubscription = await Subscription.findOne({
-      user: lenderId,
-      isActive: true,
-      subscriptionExpiry: { $gte: new Date() },
-    });
+    // const activeSubscription = await Subscription.findOne({
+    //   user: lenderId,
+    //   isActive: true,
+    //   subscriptionExpiry: { $gte: new Date() },
+    // });
 
-    if (!activeSubscription) {
-      return res.status(403).json({
-        message: "You must have an active subscription to add a loan",
-      });
-    }
+    // if (!activeSubscription) {
+    //   return res.status(403).json({
+    //     message: "You must have an active subscription to add a loan",
+    //   });
+    // }
 
     const createLoan = new Loan({
       ...LoanData,
@@ -38,6 +38,8 @@ const AddLoan = async (req, res) => {
         errors: errorMessages, // Return an array of error messages
       });
     }
+
+    console.log(error)
 
     return res.status(500).json({
       message: "Server Error",
@@ -187,6 +189,29 @@ const getLoansByLender = async (req, res) => {
   }
 };
 
+const getLoansById = async (req, res) => {
+  try {
+    const Id = req.user.id;  // Extracting lender's ID from the JWT token
+
+    const loans = await Loan.findById({ Id });
+
+    if (!loans || loans.length === 0) {
+      return res.status(404).json({ message: "No loans found" });
+    }
+
+    return res.status(200).json({
+      message: "Loans fetched successfully",
+      data: loans,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
 
 const getLoanByAadhaar = async (req, res) => {
   const { aadhaarNumber } = req.query;
@@ -196,7 +221,9 @@ const getLoanByAadhaar = async (req, res) => {
   }
 
   try {
-    const loans = await Loan.find({ aadhaarNumber });
+    const loans = await Loan.find({ aadhaarNumber })
+      .populate('lenderId', 'userName email mobileNo')
+      .exec();
 
     if (loans.length === 0) {
       return res.status(404).json({ message: "No loans found for this Aadhaar number" });
@@ -223,6 +250,7 @@ module.exports = {
   AddLoan,
   ShowAllLoan,
   GetLoanDetails,
+  getLoansById,
   deleteLoanDetails,
   updateLoanDetails,
   getLoansByLender,
