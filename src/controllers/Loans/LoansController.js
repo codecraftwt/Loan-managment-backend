@@ -245,6 +245,42 @@ const getLoanByAadhaar = async (req, res) => {
   }
 };
 
+const getLoanStats = async (req, res) => {
+  try {
+    const { aadhaarNumber } = req.query;
+    const lenderId = req.user.id;
+
+    if (!aadhaarNumber) {
+      return res.status(400).json({ message: "Aadhaar number is required" });
+    }
+
+    const loansTaken = await Loan.find({ aadhaarNumber });
+
+    const loansPending = loansTaken.filter(loan => loan.status === 'pending').length;
+    const loansPaid = loansTaken.filter(loan => loan.status === 'paid').length;
+
+    const loansGiven = await Loan.find({ lenderId });
+
+    return res.status(200).json({
+      message: "Loan stats fetched successfully",
+      data: {
+        loansTakenCount: loansTaken.length || 0,
+        loansPendingCount: loansPending || 0,
+        loansPaidCount: loansPaid || 0,
+        loansGivenCount: loansGiven.length || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching loan stats:", error);
+    return res.status(500).json({
+      message: "Server error. Please try again later.",
+      error: error.message,
+    });
+  }
+};
+
+
+
 
 module.exports = {
   AddLoan,
@@ -255,5 +291,6 @@ module.exports = {
   updateLoanDetails,
   getLoansByLender,
   getLoanByAadhaar,
-  updateLoanStatus
+  updateLoanStatus,
+  getLoanStats
 };

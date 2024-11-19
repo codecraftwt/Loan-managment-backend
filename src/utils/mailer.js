@@ -1,4 +1,7 @@
-const nodemailer = require("nodemailer");
+require('dotenv').config();  // Ensure dotenv is loaded at the top
+
+const nodemailer = require('nodemailer');
+
 
 // Create a transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
@@ -8,6 +11,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
+
 
 // Function to send a password reset verification email
 const sendVerificationEmail = async (to, code) => {

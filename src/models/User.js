@@ -17,6 +17,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    profileImage: {
+      type: String,
+    },
     address: {
       type: String,
       required: true,
@@ -33,8 +36,8 @@ const userSchema = new mongoose.Schema(
     },
     subscription: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Subscription'
-    }
+      ref: "Subscription",
+    },
   },
   { timestamps: true }
 );

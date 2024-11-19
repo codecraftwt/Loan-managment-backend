@@ -9,6 +9,7 @@ const {
   getLoanByAadhaar,
   updateLoanStatus,
   getLoansById,
+  getLoanStats,
 } = require("../../controllers/Loans/LoansController");
 const authenticateUser = require("../../middlewares/authenticateUser");
 const router = express.Router();
@@ -25,9 +26,11 @@ router.get('/get-loan-by-id', authenticateUser, getLoansById)
 
 router.get("/get-loan", GetLoanDetails);
 
+router.get("/loan-stats", authenticateUser, getLoanStats);
+
 router.delete("/:id", deleteLoanDetails);
 
-router.patch('/:loanId/status', updateLoanStatus);
+router.patch('/update-loan-status/:loanId', updateLoanStatus);
 
 router.patch("/:id", updateLoanDetails);
 

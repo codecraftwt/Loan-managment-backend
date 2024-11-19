@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
-// const crypto = require("crypto");
+const crypto = require("crypto");
 const { sendVerificationEmail } = require("../../utils/mailer");
 const { validateEmail, validateMobile } = require("../../utils/authHelpers");
 
@@ -66,7 +66,6 @@ const signInUser = async (req, res) => {
   const { emailOrMobile, password } = req.body;
 
   try {
-
     if (!emailOrMobile || !password) {
       return res.status(400).json({
         message: "Please provide email or mobile number, and password.",
@@ -82,13 +81,15 @@ const signInUser = async (req, res) => {
       user = await User.findOne({ mobileNo: emailOrMobile });
     } else {
       return res.status(400).json({
-        message: "Invalid input. Please provide a valid email or mobile number.",
+        message:
+          "Invalid input. Please provide a valid email or mobile number.",
       });
     }
 
     if (!user) {
       return res.status(401).json({
-        message: "Invalid credentials, please check your email or mobile number and password.",
+        message:
+          "Invalid credentials, please check your email or mobile number and password.",
       });
     }
 
@@ -97,7 +98,8 @@ const signInUser = async (req, res) => {
 
     if (!isMatch) {
       return res.status(401).json({
-        message: "Invalid password, please check your email or mobile number and password.",
+        message:
+          "Invalid password, please check your email or mobile number and password.",
       });
     }
 
@@ -127,43 +129,76 @@ const signInUser = async (req, res) => {
 
 let verificationCodes = {};
 
-// const requestPasswordReset = async (req, res) => {
-//   const { email } = req.body;
-
-//   try {
-//     const user = await User.findOne({ email });
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const verificationCode = crypto.randomBytes(3).toString("hex");
-//     verificationCodes[email] = verificationCode;
-
-//     await sendVerificationEmail(email, verificationCode);
-//     res.status(200).json({ message: "Verification code sent to your email" });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// };
-
-const resetPassword = async (req, res) => {
-  const { email, code, newPassword } = req.body;
+const requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
 
   try {
-    if (verificationCodes[email] !== code) {
-      return res.status(400).json({ message: "Invalid verification code" });
-    }
-
+    // Check if the user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    user.password = newPassword; // Password should be hashed in User model middleware
+    // Generate a 6-digit OTP (One-Time Password)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP temporarily (or you can store in the DB for persistence)
+    verificationCodes[email] = otp;
+
+    // Send OTP email to the user
+    await sendVerificationEmail(email, otp);
+
+    // Respond to the user
+    res.status(200).json({ message: "Verification code sent to your email" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    // Check if the OTP matches the stored OTP for this email
+    if (verificationCodes[email] !== otp) {
+      console.log("INvalid OTP");
+      return res.status(400).json({ message: "Invalid verification code" });
+    }
+
+    console.log("OTP verified");
+    // If OTP is valid, proceed to reset the password.
+    res.status(200).json({ message: "OTP verified successfully" });
+  } catch (error) {
+    console.error(error);
+    console.log("OTP Error", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  try {
+    // Check if OTP is valid
+    if (verificationCodes[email] !== otp) {
+      return res.status(400).json({ message: "Invalid verification code" });
+    }
+
+    // Check if the user exists in the database
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Hash the new password before storing it in the DB
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user's password in the database
+    user.password = hashedPassword;
     await user.save();
 
-    // Optionally remove the code from memory after use
+    // Optionally, remove the OTP after it's used
     delete verificationCodes[email];
 
     res.status(200).json({ message: "Password reset successfully" });
@@ -176,6 +211,7 @@ const resetPassword = async (req, res) => {
 module.exports = {
   signupUser,
   signInUser,
-  // requestPasswordReset,
+  requestPasswordReset,
   resetPassword,
+  verifyOtp,
 };
