@@ -1,6 +1,7 @@
 const express = require("express");
 const Loan = require("../../models/Loan");
 const Subscription = require("../../models/Subscription");
+const User = require("../../models/User");
 
 const AddLoan = async (req, res) => {
   try {
@@ -212,30 +213,52 @@ const getLoansById = async (req, res) => {
   }
 };
 
-
 const getLoanByAadhaar = async (req, res) => {
   const { aadhaarNumber } = req.query;
 
+  // Validate Aadhaar Number
   if (!aadhaarNumber) {
     return res.status(400).json({ message: "Aadhaar number is required" });
   }
 
   try {
+    // Fetch loans based on Aadhaar number
     const loans = await Loan.find({ aadhaarNumber })
       .populate('lenderId', 'userName email mobileNo')
       .exec();
 
+    // Check if loans are found
     if (loans.length === 0) {
       return res.status(404).json({ message: "No loans found for this Aadhaar number" });
     }
 
+    // Calculate total loan amount
     const totalAmount = loans.reduce((sum, loan) => sum + loan.amount, 0);
 
+    // Fetch the user's profile image based on Aadhaar number
+    const user = await User.findOne({ aadharCardNo: aadhaarNumber })
+      .select('profileImage')
+      .lean()
+      .exec();
+
+
+    // Map loans data and include profile image if user is found
+    const loanDataWithProfile = loans.map(loan => {
+      // If user is found, add the profile image, otherwise don't include it
+      const loanData = { ...loan.toObject() };
+      if (user) {
+        loanData.userProfileImage = user.profileImage;  // Add profile image if user exists
+      }
+      return loanData;
+    });
+
+    // Return the response with loan data, total amount, and user's profile image
     return res.status(200).json({
       message: "Loan data fetched successfully",
       totalAmount,
-      data: loans,
+      data: loanDataWithProfile,
     });
+
   } catch (error) {
     console.error("Error fetching loan data by Aadhaar:", error);
     return res.status(500).json({
@@ -244,6 +267,40 @@ const getLoanByAadhaar = async (req, res) => {
     });
   }
 };
+
+
+
+// const getLoanByAadhaar = async (req, res) => {
+//   const { aadhaarNumber } = req.query;
+
+//   if (!aadhaarNumber) {
+//     return res.status(400).json({ message: "Aadhaar number is required" });
+//   }
+
+//   try {
+//     const loans = await Loan.find({ aadhaarNumber })
+//       .populate('lenderId', 'userName email mobileNo')
+//       .exec();
+
+//     if (loans.length === 0) {
+//       return res.status(404).json({ message: "No loans found for this Aadhaar number" });
+//     }
+
+//     const totalAmount = loans.reduce((sum, loan) => sum + loan.amount, 0);
+
+//     return res.status(200).json({
+//       message: "Loan data fetched successfully",
+//       totalAmount,
+//       data: loans,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching loan data by Aadhaar:", error);
+//     return res.status(500).json({
+//       message: "Server error. Please try again later.",
+//       error: error.message,
+//     });
+//   }
+// };
 
 const getLoanStats = async (req, res) => {
   try {

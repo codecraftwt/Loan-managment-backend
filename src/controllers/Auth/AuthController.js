@@ -116,6 +116,7 @@ const signInUser = async (req, res) => {
       address: user.address,
       aadharCardNo: user.aadharCardNo,
       mobileNo: user.mobileNo,
+      profileImage: user.profileImage,
       token,
     });
   } catch (error) {
