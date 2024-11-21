@@ -1,5 +1,6 @@
 const User = require("../../models/User");
 const cloudinary = require("../../config/cloudinaryConfig");
+const { default: mongoose } = require("mongoose");
 
 // Update Profile API
 const updateProfile = async (req, res) => {
@@ -40,45 +41,44 @@ const updateProfile = async (req, res) => {
   }
 };
 
-
 const uploadProfileImage = async (req, res) => {
-  const userId = req.user.id; // Get user ID from the decoded token  
-  
-  if (!req.file) {  
+  const userId = req.user.id; // Get user ID from the decoded token
+
+  if (!req.file) {
     return res.status(400).json({ message: "No file uploaded." });
   }
 
-  try {      
+  try {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "Loan_user_profiles",
-        public_id: `${userId}_profile_image`, 
-        resource_type: "image", 
+        public_id: `${userId}_profile_image`,
+        resource_type: "image",
       },
       async (error, result) => {
         if (error) {
-          console.log('Error uploading to Cloudinary:', error);
+          console.log("Error uploading to Cloudinary:", error);
           return res.status(500).json({
             message: "Server error while uploading to Cloudinary",
             error: error.message,
           });
         }
         // Log Cloudinary result
-        console.log('Cloudinary upload result:', result);
-        const imageUrl = result.secure_url; 
-        console.log('Image URL:', imageUrl); 
+        console.log("Cloudinary upload result:", result);
+        const imageUrl = result.secure_url;
+        console.log("Image URL:", imageUrl);
 
         // Find the user and update the profile image URL
         const user = await User.findById(userId);
         if (!user) {
-          console.log('User not found'); 
+          console.log("User not found");
           return res.status(404).json({ message: "User not found." });
         }
 
-        user.profileImage = imageUrl; 
+        user.profileImage = imageUrl;
 
         await user.save();
-        console.log('User profile image updated successfully'); 
+        console.log("User profile image updated successfully");
 
         return res.status(200).json({
           message: "Profile image updated successfully.",
@@ -89,7 +89,7 @@ const uploadProfileImage = async (req, res) => {
             mobileNo: user.mobileNo,
             address: user.address,
             aadharCardNo: user.aadharCardNo,
-            profileImage: user.profileImage, 
+            profileImage: user.profileImage,
           },
         });
       }
@@ -97,18 +97,86 @@ const uploadProfileImage = async (req, res) => {
 
     // Pipe the file buffer from multer to Cloudinary upload stream
     stream.end(req.file.buffer);
-
   } catch (error) {
     console.error("Error uploading profile image:", error);
     return res.status(500).json({
       message: "Server error. Please try again later.",
-      error: error.message, 
+      error: error.message,
     });
   }
 };
 
+// Assuming you have the following route on your backend
+
+const deleteProfileImage = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user || !user.profileImage) {
+      return res.status(400).json({ message: "No profile image to delete." });
+    }   
+
+    const publicId = `Loan_user_profiles/${userId}_profile_image`;
+    
+    // Delete from Cloudinary
+    const cloudinaryResult = await cloudinary.uploader.destroy(publicId);
+    console.log("Cloudinary result:", cloudinaryResult);
+
+    // Check if the deletion was successful
+    if (cloudinaryResult.result !== "ok") {
+      return res
+        .status(500)
+        .json({ message: "Error deleting image from Cloudinary." });
+    }
+
+    // Update the user record to remove the profile image
+    user.profileImage = null;
+    await user.save();
+
+    res.status(200).json({ message: "Profile image deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting profile image:", error.message);
+    res
+      .status(500)
+      .json({ message: "Error deleting profile image.", error: error.message });
+  }
+};
+
+const getUserDataById = async (req, res) => {
+  const userId = req.user.id; // Get user ID from the decoded token
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(userId).select("-password"); // Exclude password field from the response
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    return res.status(200).json({
+      message: "User data fetched successfully.",
+      user: {
+        _id: user._id,
+        userName: user.userName,
+        email: user.email,
+        mobileNo: user.mobileNo,
+        address: user.address,
+        aadharCardNo: user.aadharCardNo,
+        profileImage: user.profileImage,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    return res.status(500).json({
+      message: "Server error. Please try again later.",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   updateProfile,
   uploadProfileImage, // Export the new upload function
+  getUserDataById,
+  deleteProfileImage,
 };

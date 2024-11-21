@@ -109,6 +109,12 @@ const deleteLoanDetails = async (req, res) => {
 const updateLoanDetails = async (req, res) => {
   try {
     const loanId = req.params.id;
+    const loan = await Loan.findById(loanId);
+
+    if (loan.borrowerAcceptanceStatus === 'accepted' || loan.borrowerAcceptanceStatus === 'rejected') {
+      return res.status(400).json({ message: "Loan terms already accepted or rejected by the borrower." });
+    }
+    
     const loanUpdateData = await Loan.findByIdAndUpdate(loanId, req.body, {
       new: true,
     });

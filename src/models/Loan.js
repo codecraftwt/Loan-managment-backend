@@ -66,6 +66,11 @@ const loanSchema = new mongoose.Schema(
       enum: ["pending", "paid"],
       default: "pending",
     },
+    borrowerAcceptanceStatus: {
+      type: String,
+      enum: ['pending', 'requested', 'accepted', 'rejected'],
+      default: 'pending',
+    }
   },
   { timestamps: true }
 );
