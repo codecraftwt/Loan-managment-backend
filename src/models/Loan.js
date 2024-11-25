@@ -71,6 +71,9 @@ const loanSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "rejected"],
       default: "pending",
     },
+    profileImage: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
