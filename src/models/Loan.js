@@ -4,31 +4,31 @@ const loanSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, "Name is required"],
     },
     aadhaarNumber: {
       type: String,
-      required: [true, 'Aadhaar number is required'],
-      length: [12, 'Aadhaar number must be 12 digits'],
-      match: [/^\d{12}$/, 'Aadhaar number must be 12 digits'],
+      required: [true, "Aadhaar number is required"],
+      length: [12, "Aadhaar number must be 12 digits"],
+      match: [/^\d{12}$/, "Aadhaar number must be 12 digits"],
     },
     mobileNumber: {
       type: String,
-      required: [true, 'Mobile number is required'],
-      length: [10, 'Mobile number must be 10 digits'],
-      match: [/^\d{10}$/, "Mobile number must be a valid 10-digit number"]
+      required: [true, "Mobile number is required"],
+      length: [10, "Mobile number must be 10 digits"],
+      match: [/^\d{10}$/, "Mobile number must be a valid 10-digit number"],
     },
     address: {
       type: String,
-      required: [true, 'Address is required'],
+      required: [true, "Address is required"],
     },
     amount: {
       type: Number,
-      required: [true, 'Loan amount is required'],
-      min: [1000, 'Loan amount must be at least 1000'],
+      required: [true, "Loan amount is required"],
+      min: [1000, "Loan amount must be at least 1000"],
       validate: {
         validator: (v) => v > 0,
-        message: 'Loan amount must be a positive number',
+        message: "Loan amount must be a positive number",
       },
     },
     loanStartDate: {
@@ -39,7 +39,7 @@ const loanSchema = new mongoose.Schema(
       type: Date,
       validate: {
         validator: (v) => v > Date.now(),
-        message: 'Loan end date must be a future date',
+        message: "Loan end date must be a future date",
       },
     },
     agreement: {
@@ -59,7 +59,7 @@ const loanSchema = new mongoose.Schema(
     },
     purpose: {
       type: String,
-      required: [true, 'Purpose of loan is required'],
+      required: [true, "Purpose of loan is required"],
     },
     status: {
       type: String,
@@ -68,9 +68,9 @@ const loanSchema = new mongoose.Schema(
     },
     borrowerAcceptanceStatus: {
       type: String,
-      enum: ['pending', 'requested', 'accepted', 'rejected'],
-      default: 'pending',
-    }
+      enum: ["pending", "accepted", "rejected"],
+      default: "pending",
+    },
   },
   { timestamps: true }
 );

@@ -30,17 +30,17 @@ const AddLoan = async (req, res) => {
 
     return res.status(201).json(createLoan);
   } catch (error) {
-
     if (error.name === "ValidationError") {
-
-      const errorMessages = Object.values(error.errors).map((err) => err.message);
+      const errorMessages = Object.values(error.errors).map(
+        (err) => err.message
+      );
       return res.status(400).json({
         message: "Validation error",
         errors: errorMessages, // Return an array of error messages
       });
     }
 
-    console.log(error)
+    console.log(error);
 
     return res.status(500).json({
       message: "Server Error",
@@ -111,11 +111,16 @@ const updateLoanDetails = async (req, res) => {
     const loanId = req.params.id;
     const loan = await Loan.findById(loanId);
 
-    if (loan.borrowerAcceptanceStatus === 'accepted' || loan.borrowerAcceptanceStatus === 'rejected') {
-      return res.status(400).json({ message: "Loan terms already accepted or rejected by the borrower." });
+    if (!loan) {
+      return res.status(404).json({ message: "Loan data not found" });
     }
-    
-    const loanUpdateData = await Loan.findByIdAndUpdate(loanId, req.body, {
+
+    const updatedData = {
+      ...req.body,
+      borrowerAcceptanceStatus: "pending",
+    };
+
+    const loanUpdateData = await Loan.findByIdAndUpdate(loanId, updatedData, {
       new: true,
     });
 
@@ -141,7 +146,9 @@ const updateLoanStatus = async (req, res) => {
 
   // Check if the status is either "pending" or "paid"
   if (!["pending", "paid"].includes(status)) {
-    return res.status(400).json({ message: "Invalid status value. Only 'pending' or 'paid' are allowed." });
+    return res.status(400).json({
+      message: "Invalid status value. Only 'pending' or 'paid' are allowed.",
+    });
   }
 
   try {
@@ -152,7 +159,9 @@ const updateLoanStatus = async (req, res) => {
 
     // Check if the loan is already in the same status
     if (loan.status === status) {
-      return res.status(400).json({ message: `Loan is already marked as '${status}'` });
+      return res
+        .status(400)
+        .json({ message: `Loan is already marked as '${status}'` });
     }
 
     // Update the loan status
@@ -172,15 +181,58 @@ const updateLoanStatus = async (req, res) => {
   }
 };
 
+const updateLoanAcceptanceStatus = async (req, res) => {
+  const { loanId } = req.params;
+  const { status } = req.body;
+
+  // Check if the status is either "pending" or "paid"
+  if (!["pending", "accepted", "rejected"].includes(status)) {
+    return res.status(400).json({
+      message:
+        "Invalid status value. Only 'pending' or 'accepted' or 'rejected' are allowed.",
+    });
+  }
+
+  try {
+    const loan = await Loan.findById(loanId);
+    if (!loan) {
+      return res.status(404).json({ message: "Loan not found" });
+    }
+
+    // Check if the loan is already in the same status
+    if (loan.borrowerAcceptanceStatus === status) {
+      return res.status(400).json({
+        message: `Loan is already marked as '${status}'`,
+      });
+    }
+
+    // Update the loan status
+    loan.borrowerAcceptanceStatus = status;
+    await loan.save();
+
+    return res.status(200).json({
+      message: "Loan status updated successfully",
+      loan,
+    });
+  } catch (error) {
+    console.error("Error updating loan status:", error);
+    return res.status(500).json({
+      message: "Server error. Please try again later.",
+      error: error.message,
+    });
+  }
+};
 
 const getLoansByLender = async (req, res) => {
   try {
-    const lenderId = req.user.id;  // Extracting lender's ID from the JWT token
+    const lenderId = req.user.id; // Extracting lender's ID from the JWT token
 
     const loans = await Loan.find({ lenderId });
 
     if (!loans || loans.length === 0) {
-      return res.status(404).json({ message: "No loans found for this lender" });
+      return res
+        .status(404)
+        .json({ message: "No loans found for this lender" });
     }
 
     return res.status(200).json({
@@ -198,7 +250,7 @@ const getLoansByLender = async (req, res) => {
 
 const getLoansById = async (req, res) => {
   try {
-    const Id = req.user.id;  // Extracting lender's ID from the JWT token
+    const Id = req.user.id; // Extracting lender's ID from the JWT token
 
     const loans = await Loan.findById({ Id });
 
@@ -230,12 +282,14 @@ const getLoanByAadhaar = async (req, res) => {
   try {
     // Fetch loans based on Aadhaar number
     const loans = await Loan.find({ aadhaarNumber })
-      .populate('lenderId', 'userName email mobileNo')
+      .populate("lenderId", "userName email mobileNo")
       .exec();
 
     // Check if loans are found
     if (loans.length === 0) {
-      return res.status(404).json({ message: "No loans found for this Aadhaar number" });
+      return res
+        .status(404)
+        .json({ message: "No loans found for this Aadhaar number" });
     }
 
     // Calculate total loan amount
@@ -243,17 +297,16 @@ const getLoanByAadhaar = async (req, res) => {
 
     // Fetch the user's profile image based on Aadhaar number
     const user = await User.findOne({ aadharCardNo: aadhaarNumber })
-      .select('profileImage')
+      .select("profileImage")
       .lean()
       .exec();
 
-
     // Map loans data and include profile image if user is found
-    const loanDataWithProfile = loans.map(loan => {
+    const loanDataWithProfile = loans.map((loan) => {
       // If user is found, add the profile image, otherwise don't include it
       const loanData = { ...loan.toObject() };
       if (user) {
-        loanData.userProfileImage = user.profileImage;  // Add profile image if user exists
+        loanData.userProfileImage = user.profileImage; // Add profile image if user exists
       }
       return loanData;
     });
@@ -264,7 +317,6 @@ const getLoanByAadhaar = async (req, res) => {
       totalAmount,
       data: loanDataWithProfile,
     });
-
   } catch (error) {
     console.error("Error fetching loan data by Aadhaar:", error);
     return res.status(500).json({
@@ -273,40 +325,6 @@ const getLoanByAadhaar = async (req, res) => {
     });
   }
 };
-
-
-
-// const getLoanByAadhaar = async (req, res) => {
-//   const { aadhaarNumber } = req.query;
-
-//   if (!aadhaarNumber) {
-//     return res.status(400).json({ message: "Aadhaar number is required" });
-//   }
-
-//   try {
-//     const loans = await Loan.find({ aadhaarNumber })
-//       .populate('lenderId', 'userName email mobileNo')
-//       .exec();
-
-//     if (loans.length === 0) {
-//       return res.status(404).json({ message: "No loans found for this Aadhaar number" });
-//     }
-
-//     const totalAmount = loans.reduce((sum, loan) => sum + loan.amount, 0);
-
-//     return res.status(200).json({
-//       message: "Loan data fetched successfully",
-//       totalAmount,
-//       data: loans,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching loan data by Aadhaar:", error);
-//     return res.status(500).json({
-//       message: "Server error. Please try again later.",
-//       error: error.message,
-//     });
-//   }
-// };
 
 const getLoanStats = async (req, res) => {
   try {
@@ -319,8 +337,12 @@ const getLoanStats = async (req, res) => {
 
     const loansTaken = await Loan.find({ aadhaarNumber });
 
-    const loansPending = loansTaken.filter(loan => loan.status === 'pending').length;
-    const loansPaid = loansTaken.filter(loan => loan.status === 'paid').length;
+    const loansPending = loansTaken.filter(
+      (loan) => loan.status === "pending"
+    ).length;
+    const loansPaid = loansTaken.filter(
+      (loan) => loan.status === "paid"
+    ).length;
 
     const loansGiven = await Loan.find({ lenderId });
 
@@ -342,9 +364,6 @@ const getLoanStats = async (req, res) => {
   }
 };
 
-
-
-
 module.exports = {
   AddLoan,
   ShowAllLoan,
@@ -355,5 +374,6 @@ module.exports = {
   getLoansByLender,
   getLoanByAadhaar,
   updateLoanStatus,
-  getLoanStats
+  getLoanStats,
+  updateLoanAcceptanceStatus,
 };
