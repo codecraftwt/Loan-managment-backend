@@ -2,6 +2,7 @@ const express = require("express");
 const Loan = require("../../models/Loan");
 const Subscription = require("../../models/Subscription");
 const User = require("../../models/User");
+const { sendLoanStatusNotification } = require("../../services/notificationService");
 
 const AddLoan = async (req, res) => {
   try {
@@ -209,6 +210,9 @@ const updateLoanAcceptanceStatus = async (req, res) => {
     // Update the loan status
     loan.borrowerAcceptanceStatus = status;
     await loan.save();
+
+    // Send notification to lender
+    await sendLoanStatusNotification(loan.lenderId, status);
 
     return res.status(200).json({
       message: "Loan status updated successfully",

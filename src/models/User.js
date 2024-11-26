@@ -38,6 +38,13 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Subscription",
     },
+    // Store multiple device tokens as an array
+    deviceTokens: [
+      {
+        type: String, // Each device token will be stored as a string
+        required: false, // Tokens are optional initially and will be updated later
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -4,6 +4,8 @@ const {
   uploadProfileImage,
   getUserDataById,
   deleteProfileImage,
+  registerDeviceToken,
+  removeDeviceToken,
 } = require("../controllers/User/userController");
 const authenticateUser = require("../middlewares/authenticateUser");
 const upload = require("../config/multerConfig");
@@ -24,5 +26,9 @@ router.post(
 );
 
 router.delete("/delete-profile-image", authenticateUser, deleteProfileImage);
+
+router.post("/register-device-token", registerDeviceToken);
+
+router.post("/remove-device-token", authenticateUser, removeDeviceToken);
 
 module.exports = router;

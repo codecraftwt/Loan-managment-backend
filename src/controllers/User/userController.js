@@ -106,8 +106,6 @@ const uploadProfileImage = async (req, res) => {
   }
 };
 
-// Assuming you have the following route on your backend
-
 const deleteProfileImage = async (req, res) => {
   const userId = req.user.id;
 
@@ -115,10 +113,10 @@ const deleteProfileImage = async (req, res) => {
     const user = await User.findById(userId);
     if (!user || !user.profileImage) {
       return res.status(400).json({ message: "No profile image to delete." });
-    }   
+    }
 
     const publicId = `Loan_user_profiles/${userId}_profile_image`;
-    
+
     // Delete from Cloudinary
     const cloudinaryResult = await cloudinary.uploader.destroy(publicId);
     console.log("Cloudinary result:", cloudinaryResult);
@@ -174,9 +172,75 @@ const getUserDataById = async (req, res) => {
   }
 };
 
+// This function is called to register or update the device token when the user logs in or opens the app
+const registerDeviceToken = async (req, res) => {
+  const { userId, deviceToken } = req.body; 
+
+  if (!userId || !deviceToken) {
+    return res
+      .status(400)
+      .json({ message: "User ID and device token are required" });
+  }
+
+  try {
+    // Find the user and add the new device token to the array
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the deviceToken is already in the array
+    if (!user.deviceTokens.includes(deviceToken)) {
+      user.deviceTokens.push(deviceToken);
+      await user.save();
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Device token registered successfully", user });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error registering device token" });
+  }
+};
+
+const removeDeviceToken = async (req, res) => {
+  const { deviceToken } = req.body;
+  const userId = req.user.id;
+
+  if (!userId || !deviceToken) {
+    return res
+      .status(400)
+      .json({ message: "User ID and device token are required" });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Remove the token from the deviceTokens array
+    user.deviceTokens = user.deviceTokens.filter(
+      (token) => token !== deviceToken
+    );
+    await user.save();
+
+    return res
+      .status(200)
+      .json({ message: "Device token removed successfully" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error removing device token" });
+  }
+};
+
 module.exports = {
   updateProfile,
-  uploadProfileImage, // Export the new upload function
+  uploadProfileImage,
   getUserDataById,
   deleteProfileImage,
+  registerDeviceToken,
+  removeDeviceToken
 };
