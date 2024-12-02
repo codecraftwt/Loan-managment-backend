@@ -2,7 +2,10 @@ const express = require("express");
 const Loan = require("../../models/Loan");
 const Subscription = require("../../models/Subscription");
 const User = require("../../models/User");
-const { sendLoanStatusNotification } = require("../../services/notificationService");
+const {
+  sendLoanStatusNotification,
+  sendLoanUpdateNotification,
+} = require("../../services/notificationService");
 
 const AddLoan = async (req, res) => {
   try {
@@ -28,6 +31,8 @@ const AddLoan = async (req, res) => {
     });
 
     await createLoan.save();
+
+    await sendLoanUpdateNotification(LoanData.aadhaarNumber, LoanData);
 
     return res.status(201).json(createLoan);
   } catch (error) {
@@ -129,6 +134,11 @@ const updateLoanDetails = async (req, res) => {
       return res.status(404).json({ message: "Loan data not found" });
     }
 
+    await sendLoanUpdateNotification(
+      loanUpdateData.aadhaarNumber,
+      loanUpdateData
+    );
+
     return res.status(200).json({
       message: "Loan updated successfully",
       data: loanUpdateData,
@@ -168,6 +178,8 @@ const updateLoanStatus = async (req, res) => {
     // Update the loan status
     loan.status = status;
     await loan.save();
+
+    await sendLoanUpdateNotification(loan.aadhaarNumber, loan);
 
     return res.status(200).json({
       message: "Loan status updated successfully",
@@ -210,6 +222,8 @@ const updateLoanAcceptanceStatus = async (req, res) => {
     // Update the loan status
     loan.borrowerAcceptanceStatus = status;
     await loan.save();
+
+    console.log(loan?.lenderId?._id, "Loan lernder id means loan given by");
 
     // Send notification to lender
     await sendLoanStatusNotification(loan.lenderId, status);
