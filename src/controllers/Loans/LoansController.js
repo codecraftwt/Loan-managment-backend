@@ -226,7 +226,7 @@ const updateLoanAcceptanceStatus = async (req, res) => {
     console.log(loan?.lenderId?._id, "Loan lernder id means loan given by");
 
     // Send notification to lender
-    await sendLoanStatusNotification(loan.lenderId, status);
+    await sendLoanStatusNotification(loan.lenderId, loan.name, status);
 
     return res.status(200).json({
       message: "Loan status updated successfully",

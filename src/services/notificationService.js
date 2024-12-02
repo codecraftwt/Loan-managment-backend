@@ -1,7 +1,7 @@
 const messaging = require("../config/firebaseConfig");
 const User = require("../models/User");
 
-async function sendLoanStatusNotification(userId, loanStatus) {
+async function sendLoanStatusNotification(userId, loanUser, loanStatus) {
   try {
     // Find the user by userId to get the device tokens
     const user = await User.findById(userId);
@@ -13,7 +13,7 @@ async function sendLoanStatusNotification(userId, loanStatus) {
     const message = {
       notification: {
         title: "Loan Status Update",
-        body: `The loan has been ${loanStatus} by ${user.userName}`,
+        body: `The loan has been ${loanStatus} by ${loanUser}`,
       },
       data: {
         loanStatus: loanStatus, // Additional data you might want to send
