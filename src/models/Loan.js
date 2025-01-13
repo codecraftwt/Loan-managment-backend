@@ -39,7 +39,8 @@ const loanSchema = new mongoose.Schema(
       type: Date,
       validate: {
         validator: (v) => v > Date.now(),
-        message: "Loan end date must be a future date",
+        message:
+          "Loan end date is already passed, request lender to extend the loan",
       },
     },
     agreement: {
